@@ -11,14 +11,35 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [status, setStatus] = useState<'idle' | 'tracking' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [activeTrackingIds, setActiveTrackingIds] = useState<{ watch?: number, interval?: number } | null>(null);
-  
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (isTracking && document.visibilityState === 'visible' && 'wakeLock' in navigator) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        } catch (err) {}
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isTracking]);
+
   // Track the history of coords to draw polyline
   const pathRef = useRef<{lat: number, lng: number}[]>([]);
 
-  const startTracking = () => {
+  const startTracking = async () => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
       return;
+    }
+
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      }
+    } catch (err) {
+      console.warn("Wake lock failed:", err);
     }
 
     setStatus('tracking');
@@ -44,8 +65,10 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
 
       try {
         await setDoc(doc(db, 'busLocations', busId), locationData);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, `busLocations/${busId}`);
+        setError(null); // Clear errors on success
+      } catch (err: any) {
+        console.error("Firestore Write Error:", err);
+        setError(`Sync Error: Check permissions or connection (${err.message})`);
       }
     };
 
@@ -112,6 +135,13 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
   };
 
   const stopTracking = async () => {
+    if (wakeLockRef.current) {
+      try {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      } catch (e) {}
+    }
+
     if (activeTrackingIds) {
       if (activeTrackingIds.watch !== undefined) {
         navigator.geolocation.clearWatch(activeTrackingIds.watch);

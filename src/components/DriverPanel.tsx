@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Play, Square, MapPin, Radio, AlertCircle, Loader2 } from 'lucide-react';
+import { Play, Square, MapPin, Radio, AlertCircle } from 'lucide-react';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { BusLocation } from '../types';
+import { BusLocation, BusId } from '../types';
 
-export const DriverPanel: React.FC = () => {
+export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [isTracking, setIsTracking] = useState(false);
   const [currentCoords, setCurrentCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [status, setStatus] = useState<'idle' | 'tracking' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [watchId, setWatchId] = useState<number | null>(null);
+  const [activeTrackingIds, setActiveTrackingIds] = useState<{ watch?: number, interval?: number } | null>(null);
 
   const startTracking = () => {
     if (!navigator.geolocation) {
@@ -22,35 +22,44 @@ export const DriverPanel: React.FC = () => {
     setIsTracking(true);
     setError(null);
 
-    const id = navigator.geolocation.watchPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        setCurrentCoords({ lat: latitude, lng: longitude });
+    const updateLocation = async (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      setCurrentCoords({ lat: latitude, lng: longitude });
 
-        const locationData: BusLocation = {
-          lat: latitude,
-          lng: longitude,
-          updatedAt: new Date().toISOString(),
-          driverId: auth.currentUser?.uid || 'unknown',
-          busId: 'bus_01',
-          status: 'active'
-        };
+      const locationData: BusLocation = {
+        lat: latitude,
+        lng: longitude,
+        updatedAt: new Date().toISOString(),
+        driverId: auth.currentUser?.uid || 'unknown',
+        busId: busId,
+        status: 'active'
+      };
 
-        try {
-          await setDoc(doc(db, 'busLocations', 'bus_01'), locationData);
-        } catch (err) {
-          handleFirestoreError(err, OperationType.WRITE, 'busLocations/bus_01');
-        }
-      },
+      try {
+        await setDoc(doc(db, 'busLocations', busId), locationData);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `busLocations/${busId}`);
+      }
+    };
+
+    const wId = navigator.geolocation.watchPosition(
+      updateLocation,
       (err) => {
         setError("GPS Error: " + err.message + ". Try using Simulation Mode.");
         setStatus('error');
-        stopTracking();
       },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
 
-    setWatchId(id);
+    const iId = window.setInterval(() => {
+      navigator.geolocation.getCurrentPosition(
+        updateLocation,
+        () => {}, // ignore errors on poll, rely on watchPosition
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+      );
+    }, 10000); 
+
+    setActiveTrackingIds({ watch: wId, interval: iId });
   };
 
   const startSimulation = () => {
@@ -76,12 +85,12 @@ export const DriverPanel: React.FC = () => {
         lng,
         updatedAt: new Date().toISOString(),
         driverId: auth.currentUser?.uid || 'unknown',
-        busId: 'bus_01',
+        busId: busId,
         status: 'active'
       };
 
       try {
-        await setDoc(doc(db, 'busLocations', 'bus_01'), locationData);
+        await setDoc(doc(db, 'busLocations', busId), locationData);
       } catch (err) {
         console.error("Simulation write error:", err);
       }
@@ -89,28 +98,26 @@ export const DriverPanel: React.FC = () => {
       index = (index + 1) % route.length;
     }, 2000);
 
-    // Store as watchId casted to any for cleanup
-    setWatchId(intervalId as any);
+    setActiveTrackingIds({ interval: intervalId as any });
   };
 
   const stopTracking = async () => {
-    if (watchId !== null) {
-      if (status === 'tracking') {
-        // If it was simulation, use clearInterval, if real, use clearWatch
-        // Simplified: just try both or use the fact that intervalId is a number too
-        navigator.geolocation.clearWatch(watchId);
-        window.clearInterval(watchId);
+    if (activeTrackingIds) {
+      if (activeTrackingIds.watch !== undefined) {
+        navigator.geolocation.clearWatch(activeTrackingIds.watch);
+      }
+      if (activeTrackingIds.interval !== undefined) {
+        window.clearInterval(activeTrackingIds.interval);
       }
     }
     
-    setWatchId(null);
+    setActiveTrackingIds(null);
     setIsTracking(false);
     setStatus('idle');
     setCurrentCoords(null);
 
     try {
-      // Remove the location document when stopped
-      await deleteDoc(doc(db, 'busLocations', 'bus_01'));
+      await deleteDoc(doc(db, 'busLocations', busId));
     } catch (err) {
       console.warn("Error deleting document on stop:", err);
     }
@@ -118,35 +125,39 @@ export const DriverPanel: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
-        window.clearInterval(watchId);
+      if (activeTrackingIds) {
+        if (activeTrackingIds.watch !== undefined) {
+          navigator.geolocation.clearWatch(activeTrackingIds.watch);
+        }
+        if (activeTrackingIds.interval !== undefined) {
+          window.clearInterval(activeTrackingIds.interval);
+        }
       }
     };
-  }, [watchId]);
+  }, [activeTrackingIds]);
 
   return (
-    <div className="flex-1 flex w-full flex-col items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-md backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 text-center shadow-2xl text-slate-100">
-        <div className="w-20 h-20 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+    <div className="flex-1 flex w-full flex-col items-center justify-center p-6 font-sans bg-[#fdfbf7]">
+      <div className="w-full max-w-md bg-white border border-[#8b5a2b]/20 rounded-3xl p-8 text-center shadow-2xl">
+        <div className="w-20 h-20 bg-[#f4ebe1] text-[#8b5a2b] border border-[#8b5a2b]/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
           <Radio size={40} className={isTracking ? 'animate-pulse' : ''} />
         </div>
         
-        <h2 className="text-2xl font-bold text-white">Host Dashboard</h2>
-        <p className="text-slate-400 mt-2 text-sm">Manage live bus location broadcasting</p>
+        <h2 className="text-2xl font-bold text-[#4a2e15]">Host Dashboard</h2>
+        <p className="text-gray-500 mt-2 text-sm font-medium">Broadcasting on: <span className="text-[#8b5a2b] font-bold">{busId.replace('_', ' ').toUpperCase()}</span></p>
 
         <div className="mt-8 space-y-4">
           {!isTracking ? (
             <>
               <button 
                 onClick={startTracking}
-                className="w-full py-4 bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 border border-white/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="w-full py-4 bg-[#8b5a2b] hover:bg-[#7a4b3a] text-white rounded-xl font-bold shadow-lg shadow-[#8b5a2b]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Play size={20} /> Start Real GPS Sharing
               </button>
               <button 
                 onClick={startSimulation}
-                className="w-full py-4 bg-gradient-to-tr from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 border border-white/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="w-full py-4 bg-white border-2 border-[#8b5a2b] hover:bg-[#8b5a2b]/5 text-[#8b5a2b] rounded-xl font-bold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <Radio size={20} /> Start Simulation View
               </button>
@@ -154,38 +165,38 @@ export const DriverPanel: React.FC = () => {
           ) : (
             <button 
               onClick={stopTracking}
-              className="w-full py-4 bg-gradient-to-tr from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 border border-white/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+              className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <Square size={20} /> Stop Journey
             </button>
           )}
         </div>
 
-        <div className="mt-10 p-6 bg-black/20 rounded-2xl border border-white/10 text-left">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Transmission Status</h4>
+        <div className="mt-10 p-6 bg-gray-50 rounded-2xl border border-gray-200 text-left">
+          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Transmission Status</h4>
           
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300 font-medium">Network</span>
-              <span className="text-xs px-2 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-full font-bold">Connected</span>
+              <span className="text-sm text-gray-700 font-medium">Network</span>
+              <span className="text-xs px-2 py-1 bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-full font-bold">Connected</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300 font-medium">GPS Access</span>
-              <span className={`text-xs px-2 py-1 rounded-full font-bold ${status === 'tracking' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' : 'bg-slate-500/20 border border-slate-500/40 text-slate-400'}`}>
+              <span className="text-sm text-gray-700 font-medium">GPS Access</span>
+              <span className={`text-xs px-2 py-1 rounded-full font-bold ${status === 'tracking' ? 'bg-emerald-100 border border-emerald-200 text-emerald-700' : 'bg-gray-200 border border-gray-300 text-gray-600'}`}>
                 {status === 'tracking' ? 'Active' : 'Offline'}
               </span>
             </div>
             {currentCoords && (
-              <div className="pt-3 border-t border-white/10 mt-3">
-                 <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Current Coordinates</p>
+              <div className="pt-3 border-t border-gray-200 mt-3">
+                 <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Current Coordinates</p>
                  <div className="flex gap-4">
                     <div className="flex items-center gap-1">
-                      <MapPin size={14} className="text-red-400" />
-                      <span className="text-sm font-mono text-slate-300">{currentCoords.lat.toFixed(5)}</span>
+                      <MapPin size={14} className="text-[#8b5a2b]" />
+                      <span className="text-sm font-mono text-gray-700">{currentCoords.lat.toFixed(5)}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <MapPin size={14} className="text-blue-400" />
-                      <span className="text-sm font-mono text-slate-300">{currentCoords.lng.toFixed(5)}</span>
+                      <MapPin size={14} className="text-[#a67c52]" />
+                      <span className="text-sm font-mono text-gray-700">{currentCoords.lng.toFixed(5)}</span>
                     </div>
                  </div>
               </div>
@@ -197,7 +208,7 @@ export const DriverPanel: React.FC = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }} 
             animate={{ opacity: 1, scale: 1 }}
-            className="mt-6 p-4 bg-red-500/10 text-red-400 rounded-xl flex items-start gap-3 text-sm text-left border border-red-500/20"
+            className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-start gap-3 text-sm text-left border border-red-200"
           >
             <AlertCircle className="shrink-0 mt-0.5" size={18} />
             <p>{error}</p>

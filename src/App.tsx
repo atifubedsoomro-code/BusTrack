@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Login } from './components/Login';
 import { BusMap } from './components/BusMap';
 import { DriverPanel } from './components/DriverPanel';
-import { UserRole } from './types';
+import { UserRole, BusId } from './types';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { LogOut, Bus } from 'lucide-react';
@@ -16,6 +16,7 @@ import { LogOut, Bus } from 'lucide-react';
 export default function App() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [rollNumber, setRollNumber] = useState<string | undefined>();
+  const [busId, setBusId] = useState<BusId | null>(null);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -23,14 +24,16 @@ export default function App() {
       if (!user) {
         setRole(null);
         setRollNumber(undefined);
+        setBusId(null);
       }
       setInitialized(true);
     });
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = (userRole: UserRole, userRollNumber?: string) => {
+  const handleLogin = (userRole: UserRole, selectedBusId: BusId, userRollNumber?: string) => {
     setRole(userRole);
+    setBusId(selectedBusId);
     setRollNumber(userRollNumber);
   };
 
@@ -38,29 +41,28 @@ export default function App() {
     await signOut(auth);
     setRole(null);
     setRollNumber(undefined);
+    setBusId(null);
   };
 
   if (!initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f172a] text-slate-100">
-        <Bus className="text-blue-500 animate-bounce" size={48} />
+      <div className="min-h-screen flex items-center justify-center bg-[#fdfbf7] text-[#5e3a21]">
+        <Bus className="animate-bounce" size={48} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative w-full overflow-hidden bg-[#0f172a] font-sans text-slate-100 flex flex-col">
-      {/* Mesh Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/30 blur-[120px]"></div>
-        <div className="absolute bottom-[10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-emerald-500/20 blur-[100px]"></div>
-        <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] rounded-full bg-indigo-600/20 blur-[80px]"></div>
+    <div className="min-h-screen relative w-full overflow-hidden bg-[#fdfbf7] font-sans text-slate-800 flex flex-col">
+      {/* Background patterns */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-5">
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#8b5a2b 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
       </div>
 
       {/* Main UI Layer */}
       <div className="relative z-20 flex flex-col h-full flex-1">
         <AnimatePresence mode="wait">
-          {!role ? (
+          {!role || !busId ? (
             <motion.div
               key="login"
               initial={{ opacity: 0 }}
@@ -79,28 +81,25 @@ export default function App() {
               className="flex-1 flex flex-col h-screen"
             >
               {/* Navigation Header */}
-              <nav className="flex items-center justify-between px-8 py-4 backdrop-blur-md bg-white/10 border-b border-white/20 z-50">
+              <nav className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#8b5a2b]/20 z-50 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <Bus size={24} className="text-white" />
-                  </div>
-                  <h1 className="text-xl font-bold tracking-tight uppercase">CampusLink <span className="text-blue-400 font-light">Tracker</span></h1>
+                  <h1 className="text-xl font-bold tracking-tight text-[#5e3a21] uppercase">CampusLink <span className="text-[#a67c52] font-light">Tracker</span></h1>
                 </div>
                 
-                <div className="flex items-center gap-6">
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    <span className="text-xs font-medium text-emerald-300 uppercase">Firebase Realtime Live</span>
+                <div className="flex items-center gap-4">
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-100 border border-emerald-200 rounded-full">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs font-semibold text-emerald-700 uppercase">Live: {busId.replace('_', ' ').toUpperCase()}</span>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">{role === 'admin' ? 'Host Admin' : rollNumber}</div>
-                      <div className="text-[10px] text-slate-400 uppercase">{role === 'admin' ? 'Broadcaster' : 'Student Access'}</div>
+                  <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+                    <div className="text-right hidden md:block text-[#5e3a21]">
+                      <div className="text-sm font-bold">{role === 'admin' ? 'Host Admin' : rollNumber}</div>
+                      <div className="text-[10px] uppercase font-semibold">{role === 'admin' ? 'Broadcaster' : 'Student Access'}</div>
                     </div>
                     <button 
                       onClick={handleLogout}
-                      className="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/20 hover:border-red-400 hover:text-red-400 flex items-center justify-center font-bold transition-colors"
+                      className="w-10 h-10 rounded-full bg-[#f4ebe1] hover:bg-[#ebdcd0] text-[#5e3a21] flex items-center justify-center font-bold transition-colors shadow-sm border border-[#d2bfae]"
                       title="Sign Out"
                     >
                       <LogOut size={16} />
@@ -111,7 +110,7 @@ export default function App() {
 
               {/* Content */}
               <main className="flex-1 relative overflow-hidden flex flex-col">
-                {role === 'admin' ? <DriverPanel /> : <BusMap />}
+                {role === 'admin' ? <DriverPanel busId={busId} /> : <BusMap busId={busId} />}
               </main>
             </motion.div>
           )}

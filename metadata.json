@@ -1,0 +1,6 @@
+{
+  "name": "Live Bus Tracker",
+  "description": "Real-time bus tracking application for students and drivers. Drivers share their live location, and students can view it on a map after logging in with their roll number.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": []
+}

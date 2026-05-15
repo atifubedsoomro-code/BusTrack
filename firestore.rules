@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin';
+    }
+
+    function isValidBusLocation(data) {
+      return data.lat is number && data.lng is number &&
+             data.updatedAt is string &&
+             data.driverId == request.auth.uid &&
+             data.busId is string;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Bus Locations
+    match /busLocations/{busId} {
+      // Allow any signed-in user (student or admin) to see the bus
+      allow read: if isSignedIn();
+      
+      // Only admins can create or update bus location
+      allow create: if isAdmin() && isValidBusLocation(request.resource.data);
+      allow update: if isAdmin() && 
+                    isValidBusLocation(request.resource.data) &&
+                    request.resource.data.busId == resource.data.busId &&
+                    request.resource.data.driverId == resource.data.driverId;
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      // For this app, we'll allow users to create their own profile once signed in
+      // (Simplified for educational purposes)
+      allow create: if isSignedIn() && request.auth.uid == userId && 
+                    request.resource.data.role in ['admin', 'student'];
+      allow update: if false; // Role can't be changed by the user
+    }
+  }
+}

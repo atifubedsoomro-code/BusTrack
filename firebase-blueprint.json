@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "BusLocation": {
+      "title": "Bus Location",
+      "description": "Live GPS coordinates of the bus",
+      "type": "object",
+      "properties": {
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "driverId": { "type": "string" },
+        "busId": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "stopped"] }
+      },
+      "required": ["lat", "lng", "updatedAt", "driverId", "busId"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile with roles",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["admin", "student"] },
+        "rollNumber": { "type": "string" }
+      },
+      "required": ["role"]
+    }
+  },
+  "firestore": {
+    "/busLocations/{busId}": {
+      "schema": "BusLocation",
+      "description": "Store live location for each bus"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    }
+  }
+}

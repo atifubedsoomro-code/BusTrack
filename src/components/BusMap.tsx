@@ -1,11 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, CircleMarker } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { BusLocation, BusId } from '../types';
-import { Bus, MapPin, Navigation } from 'lucide-react';
+import { Bus, MapPin, Navigation, LocateFixed } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
+
+// Haversine formula to calculate distance in meters
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // metres
+  const p1 = lat1 * Math.PI / 180;
+  const p2 = lat2 * Math.PI / 180;
+  const dp = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(dp / 2) * Math.sin(dp / 2) +
+    Math.cos(p1) * Math.cos(p2) *
+    Math.sin(dl / 2) * Math.sin(dl / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
 
 // Fix for Leaflet marker icon issues
 const busIcon = divIcon({
@@ -30,6 +46,41 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [location, setLocation] = useState<BusLocation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [etaInfo, setEtaInfo] = useState<string | null>(null);
+
+  const requestUserLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      (err) => {
+        alert("Couldn't fetch your location. Please check permissions.");
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  useEffect(() => {
+    if (location && userLocation) {
+      const dist = calculateDistance(location.lat, location.lng, userLocation.lat, userLocation.lng);
+      // Assume urban bus speed of ~25 km/h -> ~416 meters / min
+      const speedMperMin = 416;
+      const minutes = Math.round(dist / speedMperMin);
+      
+      if (minutes < 1) {
+        setEtaInfo("Arriving shortly!");
+      } else {
+        setEtaInfo(`~${minutes} min away`);
+      }
+    } else {
+      setEtaInfo(null);
+    }
+  }, [location, userLocation]);
 
   useEffect(() => {
     // Listen for live updates from current selected bus
@@ -99,6 +150,26 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
                   </div>
                 </Popup>
               </Marker>
+              
+              {location.path && location.path.length > 1 && (
+                <Polyline 
+                  positions={location.path.map(p => [p.lat, p.lng])} 
+                  pathOptions={{ color: '#8b5a2b', weight: 4, dashArray: '8, 8', opacity: 0.8 }} 
+                />
+              )}
+
+              {userLocation && (
+                <CircleMarker 
+                  center={[userLocation.lat, userLocation.lng]} 
+                  radius={8} 
+                  pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.8, color: 'white', weight: 2 }}
+                >
+                  <Popup>
+                    <p className="font-bold text-gray-800 text-sm">Your Location</p>
+                  </Popup>
+                </CircleMarker>
+              )}
+
               <RecenterMap lat={location.lat} lng={location.lng} />
             </>
           )}
@@ -107,7 +178,16 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
 
       {/* Floating Info Overlay */}
       {location && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-sm">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-sm flex flex-col gap-3">
+          
+          <button 
+            onClick={requestUserLocation}
+            className="self-end bg-white border border-gray-200 shadow-md text-gray-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-gray-50 transition-colors"
+          >
+            <LocateFixed size={14} className="text-[#8b5a2b]" />
+            {etaInfo ? "Update My Location" : "Find My Location"}
+          </button>
+
           <div className="backdrop-blur-xl bg-white/95 border border-gray-200 p-4 rounded-[32px] shadow-2xl flex items-center gap-4 text-gray-800">
             <div className="w-12 h-12 bg-[#8b5a2b] rounded-full flex items-center justify-center text-white shadow-lg overflow-hidden shrink-0">
               <Bus size={24} />
@@ -120,8 +200,12 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
               </p>
             </div>
             <div className="text-right pr-2">
-              <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-widest">Accuracy</span>
-              <span className="text-xs font-mono font-bold text-[#8b5a2b]">High GPS</span>
+              <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-widest">
+                {etaInfo ? "Est. Time" : "Accuracy"}
+              </span>
+              <span className="text-xs font-mono font-bold text-[#8b5a2b]">
+                {etaInfo ? etaInfo : "High GPS"}
+              </span>
             </div>
           </div>
         </div>

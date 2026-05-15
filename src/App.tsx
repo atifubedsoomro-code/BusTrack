@@ -82,8 +82,11 @@ export default function App() {
             >
               {/* Navigation Header */}
               <nav className="flex items-center justify-between px-6 py-3 bg-white border-b border-[#8b5a2b]/20 z-50 shadow-sm">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col">
                   <h1 className="text-xl font-bold tracking-tight text-[#5e3a21] uppercase">CampusLink <span className="text-[#a67c52] font-light">Tracker</span></h1>
+                  <span className="text-[10px] mt-0.5 text-[#8b5a2b] uppercase tracking-wider font-semibold hidden md:block">
+                    Benazir Bhutto Shaheed University of Technology and Skill Development Khairpur Mir's
+                  </span>
                 </div>
                 
                 <div className="flex items-center gap-4">

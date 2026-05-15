@@ -93,7 +93,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#4a2e15]">CampusLink <span className="font-light text-[#a67c52]">Tracker</span></h1>
-          <p className="text-[#8b5a2b] mt-2 text-xs uppercase tracking-widest font-bold">Live Bus Location</p>
+          <p className="text-[#8b5a2b] mt-1 text-xs uppercase tracking-widest font-bold">Live Bus Location</p>
+          <p className="text-gray-500 mt-2 text-[10px] uppercase font-semibold mx-auto w-full leading-relaxed">
+            Benazir Bhutto Shaheed University of Technology and Skill Development Khairpur Mir's
+          </p>
         </div>
 
         <div className="p-8">

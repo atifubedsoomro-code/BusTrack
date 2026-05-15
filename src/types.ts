@@ -15,4 +15,5 @@ export interface BusLocation {
   driverId: string;
   busId: BusId;
   status: 'active' | 'stopped';
+  path?: { lat: number; lng: number }[];
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Play, Square, MapPin, Radio, AlertCircle } from 'lucide-react';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -11,6 +11,9 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [status, setStatus] = useState<'idle' | 'tracking' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [activeTrackingIds, setActiveTrackingIds] = useState<{ watch?: number, interval?: number } | null>(null);
+  
+  // Track the history of coords to draw polyline
+  const pathRef = useRef<{lat: number, lng: number}[]>([]);
 
   const startTracking = () => {
     if (!navigator.geolocation) {
@@ -26,13 +29,17 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
       const { latitude, longitude } = position.coords;
       setCurrentCoords({ lat: latitude, lng: longitude });
 
+      // Keep last 100 coordinates
+      pathRef.current = [...pathRef.current, { lat: latitude, lng: longitude }].slice(-100);
+
       const locationData: BusLocation = {
         lat: latitude,
         lng: longitude,
         updatedAt: new Date().toISOString(),
         driverId: auth.currentUser?.uid || 'unknown',
         busId: busId,
-        status: 'active'
+        status: 'active',
+        path: pathRef.current
       };
 
       try {
@@ -80,13 +87,16 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
       const [lat, lng] = route[index];
       setCurrentCoords({ lat, lng });
       
+      pathRef.current = [...pathRef.current, { lat, lng }].slice(-100);
+      
       const locationData: BusLocation = {
         lat,
         lng,
         updatedAt: new Date().toISOString(),
         driverId: auth.currentUser?.uid || 'unknown',
         busId: busId,
-        status: 'active'
+        status: 'active',
+        path: pathRef.current
       };
 
       try {
@@ -115,6 +125,7 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
     setIsTracking(false);
     setStatus('idle');
     setCurrentCoords(null);
+    pathRef.current = [];
 
     try {
       await deleteDoc(doc(db, 'busLocations', busId));

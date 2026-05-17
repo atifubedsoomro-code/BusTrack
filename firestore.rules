@@ -35,8 +35,7 @@ service cloud.firestore {
       allow create: if isAdmin() && isValidBusLocation(request.resource.data);
       allow update: if isAdmin() && 
                     isValidBusLocation(request.resource.data) &&
-                    request.resource.data.busId == resource.data.busId &&
-                    request.resource.data.driverId == resource.data.driverId;
+                    request.resource.data.busId == resource.data.busId;
       allow delete: if isAdmin();
     }
 

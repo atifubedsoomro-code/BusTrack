@@ -9,6 +9,7 @@ import { Login } from './components/Login';
 import { BusMap } from './components/BusMap';
 import { DriverPanel } from './components/DriverPanel';
 import { ThemeToggle } from './components/ThemeToggle';
+import { GlobalBanner } from './components/GlobalBanner';
 import { UserRole, BusId } from './types';
 import { busData } from './data/buses';
 import { auth } from './lib/firebase';
@@ -99,6 +100,7 @@ export default function App() {
               exit={{ opacity: 0 }}
               className="flex-1 flex flex-col h-screen"
             >
+              <GlobalBanner />
               {/* Navigation Header */}
               <nav className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 border-b border-[#8b5a2b]/20 dark:border-gray-700 z-50 shadow-sm relative">
                 <div className="flex flex-col">

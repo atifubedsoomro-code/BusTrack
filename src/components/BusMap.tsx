@@ -51,7 +51,16 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [etaInfo, setEtaInfo] = useState<string | null>(null);
 
   const [isRouteOpen, setIsRouteOpen] = useState(false);
-  const selectedBusData = busData[busId];
+  const [selectedBusData, setSelectedBusData] = useState(busData[busId]);
+  
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'busConfig', busId), (docSnap) => {
+       if (docSnap.exists()) {
+           setSelectedBusData({ ...busData[busId], ...docSnap.data() } as any);
+       }
+    });
+    return unsub;
+  }, [busId]);
 
   const requestUserLocation = () => {
     if (!navigator.geolocation) {
@@ -135,10 +144,25 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
       {/* Top Left Area Container */}
       <div className="absolute top-4 left-4 right-4 md:right-auto z-40 pointer-events-none flex flex-col gap-3 items-start">
         {/* Top Left Driver & Bus Info */}
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 dark:border-gray-700 p-4 w-full max-w-xs transition-all pointer-events-auto">
-          <div className="mb-2">
-            <h2 className="font-bold text-[#4a2e15] dark:text-gray-100">{selectedBusData.label}</h2>
-            <p className="text-xs font-semibold text-[#8b5a2b] dark:text-[#c49a6f]">{selectedBusData.name}</p>
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 dark:border-gray-700 p-4 w-full max-w-xs transition-all pointer-events-auto flex flex-col">
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h2 className="font-bold text-[#4a2e15] dark:text-gray-100">{selectedBusData.label}</h2>
+              <p className="text-xs font-semibold text-[#8b5a2b] dark:text-[#c49a6f]">{selectedBusData.name}</p>
+            </div>
+            {location ? (
+              <div className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border ${
+                Date.now() - new Date(location.updatedAt).getTime() < 300000 
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' 
+                  : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+              }`}>
+                {Date.now() - new Date(location.updatedAt).getTime() < 300000 ? 'Active' : 'Delayed'}
+              </div>
+            ) : (
+              <div className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest bg-gray-500/10 text-gray-500 border border-gray-500/20">
+                Offline
+              </div>
+            )}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2 mt-1">
             <div className="flex items-center gap-1.5 mb-1">

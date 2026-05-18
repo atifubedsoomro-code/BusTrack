@@ -94,6 +94,7 @@ const AdminDashboard = () => {
   const [fleet, setFleet] = useState<Record<BusId, BusData>>(busData);
   const [emergencyMessage, setEmergencyMessage] = useState('');
   const [editingBus, setEditingBus] = useState<BusId | null>(null);
+  const [mapTheme, setMapTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'busLocations'), (snapshot) => {
@@ -116,19 +117,42 @@ const AdminDashboard = () => {
   const activeCount = activeBuses.length;
   const delayedCount = 0; // We're removing the manual delayed status 
 
-  const updateFirebaseEmergency = async (msg: string) => {
-    // Keeping this as placeholder but showing functional alert to user
-    console.log(`[FIREBASE PUT] Updating emergency broadcast: ${msg}`);
-    if (msg) alert('Emergency Broadcast recorded (Mock).');
+  const updateFirebaseEmergency = async (msg: string, hours: number = 1) => {
+    try {
+      if (!msg) {
+        // Clear message
+        await setDoc(doc(db, "system_alerts", "global"), { active: false });
+        alert('Alert removed successfully.');
+        setEmergencyMessage('');
+        return;
+      }
+      const expiresAt = Date.now() + (hours * 60 * 60 * 1000);
+      await setDoc(doc(db, "system_alerts", "global"), { 
+        message: msg, 
+        active: true, 
+        timestamp: Date.now(),
+        expiresAt
+      });
+      alert(`Emergency Broadcast deployed for ${hours} hour(s).`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to deploy broadcast.');
+    }
   };
 
-  const saveDriverAndVehicle = async (id: BusId, driver: string, vehicle: string) => {
-    console.log(`[FIREBASE PUT] Updating ${id} config`, { driver, vehicle });
-    setFleet(prev => ({
-      ...prev,
-      [id]: { ...prev[id], driverName: driver, name: vehicle }
-    }));
-    setEditingBus(null);
+  const saveDriverAndVehicle = async (id: BusId, driver: string, vehicle: string, stops: any[]) => {
+    try {
+      await setDoc(doc(db, "busConfig", id), { driverName: driver, name: vehicle, stops }, { merge: true });
+      console.log(`[FIREBASE PUT] Updating ${id} config`);
+      setFleet(prev => ({
+        ...prev,
+        [id]: { ...prev[id], driverName: driver, name: vehicle, stops }
+      }));
+      setEditingBus(null);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update bus config');
+    }
   };
 
   return (
@@ -207,12 +231,21 @@ const AdminDashboard = () => {
                 placeholder="e.g. All routes delayed due to heavy rain..."
                 className="w-full bg-[#1b1f28] border border-red-500/20 rounded-xl p-3 text-xs text-gray-200 placeholder-gray-600 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none h-20 mb-3"
               />
-              <button 
-                onClick={() => updateFirebaseEmergency(emergencyMessage)}
-                className="w-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                <AlertTriangle size={14} /> Deploy Alert
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => updateFirebaseEmergency(emergencyMessage, 1)}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <AlertTriangle size={14} /> 1Hr Alert
+                </button>
+                <button 
+                  onClick={() => updateFirebaseEmergency('', 0)}
+                  className="px-3 bg-[#1b1f28] border border-red-500/20 hover:bg-red-500/10 text-red-400 text-[11px] font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                  title="Turn off alert"
+                >
+                  <X size={14} /> Clear
+                </button>
+              </div>
            </div>
            
            {/* Activity Log ledger */}
@@ -240,9 +273,15 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-medium tracking-tight text-white flex items-center gap-2 mb-4">
               Live Fleet View
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />
+              <button 
+                onClick={() => setMapTheme(mapTheme === 'dark' ? 'light' : 'dark')}
+                className="ml-auto px-3 py-1.5 text-[10px] font-bold text-gray-400 hover:text-white bg-[#1b1f28] hover:bg-gray-800 rounded-md transition-colors border border-gray-700 uppercase tracking-widest"
+              >
+                {mapTheme === 'dark' ? 'Light Map' : 'Dark Map'}
+              </button>
             </h2>
-            <div className="w-full h-[450px]">
-              <AdminMap />
+            <div className={`w-full h-[450px] rounded-xl overflow-hidden border ${mapTheme === 'light' ? 'border-gray-600 shadow-sm' : 'border-gray-800'}`}>
+              <AdminMap mapTheme={mapTheme} />
             </div>
           </div>
 
@@ -277,7 +316,7 @@ const AdminDashboard = () => {
                   <div className="p-4 flex-1">
                     {editingBus === bus.id ? (
                       // Edit Mode
-                      <AdminBusEditor bus={bus} onSave={(d, v) => saveDriverAndVehicle(bus.id, d, v)} onCancel={() => setEditingBus(null)} />
+                      <AdminBusEditor bus={bus} onSave={(d, v, s) => saveDriverAndVehicle(bus.id, d, v, s)} onCancel={() => setEditingBus(null)} />
                     ) : (
                       // View Mode
                       <div className="space-y-4">
@@ -340,35 +379,67 @@ const AdminDashboard = () => {
 };
 
 // Setup a sub-component for inline editing
-const AdminBusEditor = ({ bus, onSave, onCancel }: { bus: BusData, onSave: (driver: string, vehicle: string) => void, onCancel: () => void }) => {
+const AdminBusEditor = ({ bus, onSave, onCancel }: { bus: BusData, onSave: (driver: string, vehicle: string, stops: any[]) => void, onCancel: () => void }) => {
   const [driver, setDriver] = useState(bus.driverName);
   const [vehicle, setVehicle] = useState(bus.name);
+  const [stops, setStops] = useState(bus.stops || []);
+  const [activeTab, setActiveTab] = useState<'info' | 'schedule'>('info');
+
+  const handleTimeChange = (index: number, newTime: string) => {
+    const newStops = [...stops];
+    newStops[index] = { ...newStops[index], time: newTime };
+    setStops(newStops);
+  };
 
   return (
-    <div className="space-y-3 animate-in fade-in">
-      <div>
-        <label className="block text-[10px] uppercase text-emerald-500 font-bold mb-1">Driver Name</label>
-        <input 
-          type="text" 
-          value={driver} 
-          onChange={e => setDriver(e.target.value)} 
-          className="w-full bg-[#1b1f28] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500" 
-        />
+    <div className="space-y-3 animate-in fade-in flex flex-col h-full">
+      <div className="flex border-b border-gray-800 mb-2">
+        <button onClick={() => setActiveTab('info')} className={`flex-1 pb-2 text-[10px] uppercase font-bold tracking-widest ${activeTab === 'info' ? 'text-emerald-400 border-b-2 border-emerald-500' : 'text-gray-500'}`}>Vehicle Info</button>
+        <button onClick={() => setActiveTab('schedule')} className={`flex-1 pb-2 text-[10px] uppercase font-bold tracking-widest ${activeTab === 'schedule' ? 'text-emerald-400 border-b-2 border-emerald-500' : 'text-gray-500'}`}>Timetable</button>
       </div>
-      <div>
-        <label className="block text-[10px] uppercase text-emerald-500 font-bold mb-1">Vehicle Details</label>
-        <input 
-          type="text" 
-          value={vehicle} 
-          onChange={e => setVehicle(e.target.value)} 
-          className="w-full bg-[#1b1f28] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500" 
-        />
-      </div>
-      <div className="flex gap-2 pt-2">
-        <button onClick={() => onSave(driver, vehicle)} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1">
+
+      {activeTab === 'info' ? (
+        <div className="space-y-3 flex-1">
+          <div>
+            <label className="block text-[10px] uppercase text-emerald-500 font-bold mb-1">Driver Name</label>
+            <input 
+              type="text" 
+              value={driver} 
+              onChange={e => setDriver(e.target.value)} 
+              className="w-full bg-[#1b1f28] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500" 
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase text-emerald-500 font-bold mb-1">Vehicle Details</label>
+            <input 
+              type="text" 
+              value={vehicle} 
+              onChange={e => setVehicle(e.target.value)} 
+              className="w-full bg-[#1b1f28] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500" 
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2 flex-1 max-h-[150px] overflow-y-auto pr-1">
+          {stops.map((stop, i) => (
+            <div key={i} className="flex items-center gap-2 bg-[#1b1f28] p-1.5 rounded-lg border border-gray-800">
+              <span className="flex-1 text-[10px] text-gray-300 font-semibold truncate px-1" title={stop.stop}>{stop.stop}</span>
+              <input 
+                type="text" 
+                value={stop.time} 
+                onChange={(e) => handleTimeChange(i, e.target.value)}
+                className="w-20 bg-gray-900 border border-gray-700 rounded text-[10px] text-emerald-400 font-mono px-2 py-1 outline-none focus:border-emerald-500 text-center"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2 pt-2 mt-auto border-t border-gray-800">
+        <button onClick={() => onSave(driver, vehicle, stops)} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold py-2 rounded-lg flex items-center justify-center gap-1">
           <Save size={14} /> Update
         </button>
-        <button onClick={onCancel} className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold py-2 rounded-lg">
+        <button onClick={onCancel} className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[11px] font-bold py-2 rounded-lg">
           Cancel
         </button>
       </div>

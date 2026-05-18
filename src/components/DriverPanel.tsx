@@ -7,7 +7,16 @@ import { BusLocation, BusId } from '../types';
 import { busData } from '../data/buses';
 
 export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
-  const selectedBusData = busData[busId];
+  const [selectedBusData, setSelectedBusData] = useState(busData[busId]);
+  
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'busConfig', busId), (docSnap) => {
+       if (docSnap.exists()) {
+           setSelectedBusData({ ...busData[busId], ...docSnap.data() } as any);
+       }
+    });
+    return unsub;
+  }, [busId]);
   const [isTracking, setIsTracking] = useState(false);
   const [currentCoords, setCurrentCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [status, setStatus] = useState<'idle' | 'tracking' | 'error'>('idle');

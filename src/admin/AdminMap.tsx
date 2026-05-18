@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Polyline } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -16,7 +16,7 @@ const busIcon = divIcon({
   iconAnchor: [18, 18],
 });
 
-export const AdminMap = () => {
+export const AdminMap = ({ mapTheme }: { mapTheme: 'light' | 'dark' }) => {
   const [locations, setLocations] = useState<Record<string, BusLocation>>({});
 
   useEffect(() => {
@@ -40,29 +40,54 @@ export const AdminMap = () => {
       <MapContainer 
         center={[centerLat, centerLng]} 
         zoom={11} 
-        style={{ width: '100%', height: '100%', background: '#1a1d24' }}
+        style={{ width: '100%', height: '100%', background: mapTheme === 'dark' ? '#1a1d24' : '#f8f9fa' }}
         zoomControl={false}
       >
         <ZoomControl position="bottomright" />
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url={`https://{s}.basemaps.cartocdn.com/${mapTheme === 'dark' ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> CartoDB'
         />
         {Object.entries(locations).map(([id, loc]) => {
           const bus = busData[id as BusId];
           if (!bus) return null;
+          
+          const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+          const busNumber = parseInt(id.replace('bus_', '')) || 1;
+          const routeColor = colors[(busNumber - 1) % colors.length];
+
+          const busIconColor = divIcon({
+            className: 'custom-bus-icon',
+            html: `<div class="p-2 rounded-full shadow-lg border-2 border-white text-white" style="background-color: ${routeColor};">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s1-1.33 1-2c0-3.33-2.67-6-6-6H7c-3.33 0-6 2.67-6 6 0 .67 1 2 1 2h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="17" cy="18" r="2"/></svg>
+                  </div>`,
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+          });
+
           return (
-            <Marker key={id} position={[loc.lat, loc.lng]} icon={busIcon}>
-              <Popup className="dark-popup">
-                <div className="p-1 text-center min-w-[120px]">
-                  <h3 className="font-bold text-gray-800 dark:text-gray-100">{bus.label.split(' (')[0]}</h3>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{bus.driverName}</p>
-                  <p className="text-[10px] text-gray-500 mt-1 font-mono">
-                    Last ping: {new Date(loc.updatedAt).toLocaleTimeString()}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
+            <React.Fragment key={id}>
+              {loc.path && loc.path.length > 0 && (
+                <Polyline 
+                  positions={loc.path.map(p => [p.lat, p.lng])} 
+                  color={routeColor} 
+                  weight={4} 
+                  opacity={0.8}
+                  dashArray="10, 10"
+                />
+              )}
+              <Marker position={[loc.lat, loc.lng]} icon={busIconColor}>
+                <Popup className="dark-popup">
+                  <div className="p-1 text-center min-w-[120px]">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-100">{bus.label.split(' (')[0]}</h3>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{bus.driverName}</p>
+                    <p className="text-[10px] text-gray-500 mt-1 font-mono">
+                      Last ping: {new Date(loc.updatedAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </Popup>
+              </Marker>
+            </React.Fragment>
           );
         })}
       </MapContainer>

@@ -113,10 +113,10 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
   return (
     <div className="flex-1 w-full relative font-sans overflow-hidden bg-[#fdfbf7]">
       {loading ? (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-md">
-          <Navigation className="animate-bounce text-[#8b5a2b] mb-2" size={48} />
-          <p className="text-[#5e3a21] font-bold">Connecting to live feed...</p>
-          <p className="text-[#a67c52] text-sm mt-1">{selectedBusData.label}</p>
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-md">
+          <Navigation className="animate-bounce text-[#8b5a2b] dark:text-[#c49a6f] mb-2" size={48} />
+          <p className="text-[#5e3a21] dark:text-gray-100 font-bold">Connecting to live feed...</p>
+          <p className="text-[#a67c52] dark:text-gray-400 text-sm mt-1">{selectedBusData.label}</p>
         </div>
       ) : null}
 
@@ -124,7 +124,7 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
       <div className="absolute bottom-40 md:bottom-8 left-4 z-40">
         <button 
           onClick={() => setIsRouteOpen(true)}
-          className="bg-white/95 backdrop-blur-md shadow-lg border border-[#8b5a2b]/20 p-3 rounded-2xl flex flex-col items-center justify-center text-[#8b5a2b] hover:bg-[#8b5a2b]/10 transition-colors"
+          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md shadow-lg border border-[#8b5a2b]/20 dark:border-gray-700 p-3 rounded-2xl flex flex-col items-center justify-center text-[#8b5a2b] dark:text-[#c49a6f] hover:bg-[#8b5a2b]/10 dark:hover:bg-gray-700 transition-colors"
           title="View Route Schedule"
         >
           <Route size={24} />
@@ -135,19 +135,19 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
       {/* Top Left Area Container */}
       <div className="absolute top-4 left-4 right-4 md:right-auto z-40 pointer-events-none flex flex-col gap-3 items-start">
         {/* Top Left Driver & Bus Info */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 p-4 w-full max-w-xs transition-all pointer-events-auto">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 dark:border-gray-700 p-4 w-full max-w-xs transition-all pointer-events-auto">
           <div className="mb-2">
-            <h2 className="font-bold text-[#4a2e15]">{selectedBusData.label}</h2>
-            <p className="text-xs font-semibold text-[#8b5a2b]">{selectedBusData.name}</p>
+            <h2 className="font-bold text-[#4a2e15] dark:text-gray-100">{selectedBusData.label}</h2>
+            <p className="text-xs font-semibold text-[#8b5a2b] dark:text-[#c49a6f]">{selectedBusData.name}</p>
           </div>
-          <div className="text-xs text-gray-600 border-t border-gray-100 pt-2 mt-1">
+          <div className="text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2 mt-1">
             <div className="flex items-center gap-1.5 mb-1">
-              <User size={14} className="text-gray-400" />
+              <User size={14} className="text-gray-400 dark:text-gray-500" />
               <span className="font-medium">{selectedBusData.driverName}</span>
             </div>
             {selectedBusData.phone && (
-              <div className="flex items-center gap-1.5 text-[#5e3a21]">
-                <span className="font-semibold text-[10px] uppercase tracking-wider bg-[#8b5a2b]/10 px-1.5 py-0.5 rounded">Call: {selectedBusData.phone}</span>
+              <div className="flex items-center gap-1.5 text-[#5e3a21] dark:text-gray-300">
+                <span className="font-semibold text-[10px] uppercase tracking-wider bg-[#8b5a2b]/10 dark:bg-gray-700 px-1.5 py-0.5 rounded">Call: {selectedBusData.phone}</span>
               </div>
             )}
           </div>
@@ -155,11 +155,11 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
 
         {/* Error Info Card stacked below Driver info */}
         {error && !loading && (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-2xl shadow-lg flex items-start gap-3 pointer-events-auto w-full max-w-xs md:max-w-md">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 p-4 rounded-2xl shadow-lg flex items-start gap-3 pointer-events-auto w-full max-w-xs md:max-w-md">
             <MapPin className="text-red-500 shrink-0 mt-1" size={20} />
             <div>
-              <h4 className="font-bold text-red-700">No Active Data</h4>
-              <p className="text-sm text-red-600">{error}</p>
+              <h4 className="font-bold text-red-700 dark:text-red-400">No Active Data</h4>
+              <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
             </div>
           </div>
         )}
@@ -167,32 +167,32 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
 
       {/* Route Sidebar Overlay */}
       {isRouteOpen && (
-        <div className="absolute inset-y-0 right-0 w-80 bg-white/95 backdrop-blur-xl shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-50 flex flex-col border-l border-[#8b5a2b]/20 transition-transform transform translate-x-0">
-          <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-[#fdfbf7]">
-            <h3 className="font-bold text-[#5e3a21] flex items-center gap-2">
-              <Route size={18} className="text-[#8b5a2b]" /> Route Schedule
+        <div className="absolute inset-y-0 right-0 w-80 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-50 flex flex-col border-l border-[#8b5a2b]/20 dark:border-gray-700 transition-transform transform translate-x-0">
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700 bg-[#fdfbf7] dark:bg-gray-800">
+            <h3 className="font-bold text-[#5e3a21] dark:text-gray-100 flex items-center gap-2">
+              <Route size={18} className="text-[#8b5a2b] dark:text-[#c49a6f]" /> Route Schedule
             </h3>
             <button 
               onClick={() => setIsRouteOpen(false)}
-              className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+              className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
             >
               <X size={20} />
             </button>
           </div>
-          <div className="p-4 bg-[#8b5a2b]/5">
-            <p className="text-xs font-bold text-[#8b5a2b] uppercase tracking-wider">{selectedBusData.routeTitle}</p>
+          <div className="p-4 bg-[#8b5a2b]/5 dark:bg-gray-900">
+            <p className="text-xs font-bold text-[#8b5a2b] dark:text-[#c49a6f] uppercase tracking-wider">{selectedBusData.routeTitle}</p>
           </div>
           <div className="flex-1 overflow-y-auto p-2">
             <ul className="space-y-1 relative">
-              <div className="absolute left-6 top-3 bottom-3 w-px bg-gray-200" />
+              <div className="absolute left-6 top-3 bottom-3 w-px bg-gray-200 dark:bg-gray-700" />
               {selectedBusData.stops.map((stop, idx) => (
-                <li key={idx} className="relative flex items-center p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                <li key={idx} className="relative flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
                   <div className="w-6 flex justify-end mr-4 relative z-10">
-                    <div className="w-3 h-3 rounded-full bg-white border-2 border-[#8b5a2b] shadow-sm" />
+                    <div className="w-3 h-3 rounded-full bg-white dark:bg-gray-800 border-2 border-[#8b5a2b] dark:border-[#c49a6f] shadow-sm" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-gray-800 text-sm">{stop.stop}</p>
-                    <p className="text-xs text-gray-500 font-mono mt-0.5 font-medium">{stop.time}</p>
+                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm">{stop.stop}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 font-medium">{stop.time}</p>
                   </div>
                 </li>
               ))}
@@ -221,9 +221,9 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
               >
                 <Popup>
                   <div className="text-center p-1">
-                    <h3 className="font-bold text-[#5e3a21]">{selectedBusData.label}</h3>
-                    <p className="text-xs text-[#a67c52]">Live Location • {selectedBusData.driverName}</p>
-                    <p className="text-[10px] text-gray-500 mt-1 font-mono">
+                    <h3 className="font-bold text-[#5e3a21] dark:text-gray-100">{selectedBusData.label}</h3>
+                    <p className="text-xs text-[#a67c52] dark:text-[#c49a6f]">Live Location • {selectedBusData.driverName}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 font-mono">
                       Last update: {new Date(location.updatedAt).toLocaleTimeString()}
                     </p>
                   </div>
@@ -244,7 +244,7 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
                   pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.8, color: 'white', weight: 2 }}
                 >
                   <Popup>
-                    <p className="font-bold text-gray-800 text-sm">Your Location</p>
+                    <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">Your Location</p>
                   </Popup>
                 </CircleMarker>
               )}
@@ -261,28 +261,28 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
           
           <button 
             onClick={requestUserLocation}
-            className="self-end bg-white border border-gray-200 shadow-md text-gray-700 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-gray-50 transition-colors"
+            className="self-end bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-md text-gray-700 dark:text-gray-300 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            <LocateFixed size={14} className="text-[#8b5a2b]" />
+            <LocateFixed size={14} className="text-[#8b5a2b] dark:text-[#a67c52]" />
             {etaInfo ? "Update My Location" : "Find My Location"}
           </button>
 
-          <div className="backdrop-blur-xl bg-white/95 border border-gray-200 p-4 rounded-[32px] shadow-2xl flex items-center gap-4 text-gray-800">
-            <div className="w-12 h-12 bg-[#8b5a2b] rounded-full flex items-center justify-center text-white shadow-lg overflow-hidden shrink-0">
+          <div className="backdrop-blur-xl bg-white/95 dark:bg-gray-800/95 border border-gray-200 dark:border-gray-700 p-4 rounded-[32px] shadow-2xl flex items-center gap-4 text-gray-800 dark:text-gray-200">
+            <div className="w-12 h-12 bg-[#8b5a2b] dark:bg-[#a67c52] rounded-full flex items-center justify-center text-white shadow-lg overflow-hidden shrink-0">
               <Bus size={24} />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-[#5e3a21] leading-tight">{selectedBusData.label} is LIVE</h3>
-              <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 font-medium">
+              <h3 className="font-bold text-[#5e3a21] dark:text-gray-100 leading-tight">{selectedBusData.label} is LIVE</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 font-medium">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                 {selectedBusData.name}
               </p>
             </div>
             <div className="text-right pr-2">
-              <span className="text-[10px] uppercase font-bold text-gray-400 block tracking-widest">
+              <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 block tracking-widest">
                 {etaInfo ? "Est. Time" : "Accuracy"}
               </span>
-              <span className="text-xs font-mono font-bold text-[#8b5a2b]">
+              <span className="text-xs font-mono font-bold text-[#8b5a2b] dark:text-[#c49a6f]">
                 {etaInfo ? etaInfo : "High GPS"}
               </span>
             </div>

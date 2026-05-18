@@ -180,15 +180,15 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
   }, [activeTrackingIds]);
 
   return (
-    <div className="flex-1 flex w-full flex-col items-center justify-center p-6 font-sans bg-[#fdfbf7]">
-      <div className="w-full max-w-md bg-white border border-[#8b5a2b]/20 rounded-3xl p-8 text-center shadow-2xl">
-        <div className="w-20 h-20 bg-[#f4ebe1] text-[#8b5a2b] border border-[#8b5a2b]/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+    <div className="flex-1 flex w-full flex-col items-center justify-center p-6 font-sans bg-transparent">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 border border-[#8b5a2b]/20 dark:border-gray-700 rounded-3xl p-8 text-center shadow-2xl">
+        <div className="w-20 h-20 bg-[#f4ebe1] dark:bg-[#a67c52]/20 text-[#8b5a2b] dark:text-[#d3b497] border border-[#8b5a2b]/20 dark:border-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
           <Radio size={40} className={isTracking ? 'animate-pulse' : ''} />
         </div>
         
-        <h2 className="text-2xl font-bold text-[#4a2e15]">Host Dashboard</h2>
-        <p className="text-gray-500 mt-2 text-sm font-medium mb-1">Broadcasting: <span className="text-[#8b5a2b] font-bold">{selectedBusData.label}</span></p>
-        <p className="text-gray-400 text-xs font-semibold">{selectedBusData.name} • Driver: {selectedBusData.driverName}</p>
+        <h2 className="text-2xl font-bold text-[#4a2e15] dark:text-gray-100">Host Dashboard</h2>
+        <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium mb-1">Broadcasting: <span className="text-[#8b5a2b] dark:text-[#d3b497] font-bold">{selectedBusData.label}</span></p>
+        <p className="text-gray-400 dark:text-gray-500 text-xs font-semibold">{selectedBusData.name} • Driver: {selectedBusData.driverName}</p>
 
         <div className="mt-8 space-y-4">
           {!isTracking ? (
@@ -201,7 +201,7 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
               </button>
               <button 
                 onClick={startSimulation}
-                className="w-full py-4 bg-white border-2 border-[#8b5a2b] hover:bg-[#8b5a2b]/5 text-[#8b5a2b] rounded-xl font-bold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-white dark:bg-gray-800 border-2 border-[#8b5a2b] dark:border-[#a67c52] hover:bg-[#8b5a2b]/5 dark:hover:bg-[#a67c52]/10 text-[#8b5a2b] dark:text-[#a67c52] rounded-xl font-bold shadow-sm transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <Radio size={20} /> Start Simulation View
               </button>
@@ -216,31 +216,31 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
           )}
         </div>
 
-        <div className="mt-10 p-6 bg-gray-50 rounded-2xl border border-gray-200 text-left">
-          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Transmission Status</h4>
+        <div className="mt-10 p-6 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 text-left">
+          <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Transmission Status</h4>
           
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700 font-medium">Network</span>
-              <span className="text-xs px-2 py-1 bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-full font-bold">Connected</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Network</span>
+              <span className="text-xs px-2 py-1 bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-full font-bold">Connected</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-700 font-medium">GPS Access</span>
-              <span className={`text-xs px-2 py-1 rounded-full font-bold ${status === 'tracking' ? 'bg-emerald-100 border border-emerald-200 text-emerald-700' : 'bg-gray-200 border border-gray-300 text-gray-600'}`}>
+              <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">GPS Access</span>
+              <span className={`text-xs px-2 py-1 rounded-full font-bold ${status === 'tracking' ? 'bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400' : 'bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400'}`}>
                 {status === 'tracking' ? 'Active' : 'Offline'}
               </span>
             </div>
             {currentCoords && (
-              <div className="pt-3 border-t border-gray-200 mt-3">
-                 <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Current Coordinates</p>
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-700 mt-3">
+                 <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mb-1">Current Coordinates</p>
                  <div className="flex gap-4">
                     <div className="flex items-center gap-1">
-                      <MapPin size={14} className="text-[#8b5a2b]" />
-                      <span className="text-sm font-mono text-gray-700">{currentCoords.lat.toFixed(5)}</span>
+                      <MapPin size={14} className="text-[#8b5a2b] dark:text-[#a67c52]" />
+                      <span className="text-sm font-mono text-gray-700 dark:text-gray-300">{currentCoords.lat.toFixed(5)}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <MapPin size={14} className="text-[#a67c52]" />
-                      <span className="text-sm font-mono text-gray-700">{currentCoords.lng.toFixed(5)}</span>
+                      <MapPin size={14} className="text-[#a67c52] dark:text-[#c49a6f]" />
+                      <span className="text-sm font-mono text-gray-700 dark:text-gray-300">{currentCoords.lng.toFixed(5)}</span>
                     </div>
                  </div>
               </div>
@@ -252,7 +252,7 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }} 
             animate={{ opacity: 1, scale: 1 }}
-            className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-start gap-3 text-sm text-left border border-red-200"
+            className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl flex items-start gap-3 text-sm text-left border border-red-200 dark:border-red-900/50"
           >
             <AlertCircle className="shrink-0 mt-0.5" size={18} />
             <p>{error}</p>

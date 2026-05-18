@@ -3,7 +3,8 @@ import { Shield, ShieldAlert, MonitorPlay, Car, Search, Menu, X, ArrowLeft, Sett
 import { busData, BusId, BusData } from '../data/buses';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
 import { BusLocation } from '../types';
 import { AdminMap } from './AdminMap';
 
@@ -13,10 +14,15 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (username === 'samiullahpathan' && password === 'samiullah-campuslink') {
-      onLogin();
+      try {
+        await signInAnonymously(auth);
+        onLogin();
+      } catch (err) {
+        setError('Failed to securely connect to database.');
+      }
     } else {
       setError('Invalid credentials. Please attempt again or contact superadmin.');
     }

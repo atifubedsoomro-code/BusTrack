@@ -90,9 +90,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="p-8 text-center border-b border-gray-100 dark:border-gray-700 bg-[#fefdfb] dark:bg-gray-800/50">
           <div className="flex justify-center mb-6">
             <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/BBSTUSD_Logo.png/800px-BBSTUSD_Logo.png" 
+              src="/logo.jpeg" 
               alt="University Logo" 
-              className="h-20 object-contain drop-shadow-md dark:brightness-110 dark:contrast-125 bg-white/10 rounded-lg"
+              className="h-28 object-contain drop-shadow-md rounded-2xl"
               onError={(e) => {
                 // Fallback icon if image fails
                 (e.target as HTMLImageElement).style.display = 'none';

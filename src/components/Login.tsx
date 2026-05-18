@@ -48,20 +48,33 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       try {
         userSnap = await getDoc(userRef);
       } catch (err) {
-        handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
+        console.warn('Could not fetch user document (might be offline):', err);
       }
 
-      if (userSnap && !userSnap.exists()) {
-        await setDoc(userRef, {
-          role: activeTab,
-          rollNumber: activeTab === 'student' ? rollNumber.toUpperCase() : null,
-          createdAt: new Date().toISOString()
-        }).catch(err => handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}`));
+      if (!userSnap || !userSnap.exists()) {
+        try {
+          await setDoc(userRef, {
+            role: activeTab,
+            rollNumber: activeTab === 'student' ? rollNumber.toUpperCase() : null,
+            createdAt: new Date().toISOString()
+          });
+        } catch (err) {
+          console.warn('Could not create user document (might be offline):', err);
+        }
       }
 
       onLogin(activeTab, selectedBus, activeTab === 'student' ? rollNumber.toUpperCase() : undefined);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      let errorMessage = 'An error occurred';
+      if (err instanceof Error) {
+        try {
+          const parsed = JSON.parse(err.message);
+          errorMessage = parsed.error || err.message;
+        } catch {
+          errorMessage = err.message;
+        }
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

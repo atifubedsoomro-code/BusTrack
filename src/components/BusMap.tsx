@@ -101,7 +101,9 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
         setLoading(false);
       },
       (err) => {
-        handleFirestoreError(err, OperationType.GET, `busLocations/${busId}`);
+        console.error("Firestore Subscribe Error:", err);
+        setError('Lost connection or permission denied.');
+        setLoading(false);
       }
     );
 
@@ -115,14 +117,6 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
           <Navigation className="animate-bounce text-[#8b5a2b] mb-2" size={48} />
           <p className="text-[#5e3a21] font-bold">Connecting to live feed...</p>
           <p className="text-[#a67c52] text-sm mt-1">{selectedBusData.label}</p>
-        </div>
-      ) : error ? (
-        <div className="absolute inset-x-4 top-4 z-40 bg-red-50 border border-red-200 p-4 rounded-2xl shadow-lg flex items-start gap-3">
-          <MapPin className="text-red-500 shrink-0 mt-1" size={20} />
-          <div>
-            <h4 className="font-bold text-red-700">No Active Data</h4>
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
         </div>
       ) : null}
 
@@ -138,9 +132,10 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
         </button>
       </div>
 
-      {/* Top Left Driver & Bus Info */}
-      <div className="absolute top-4 left-4 z-40 pointer-events-none">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 p-4 max-w-xs transition-all pointer-events-auto">
+      {/* Top Left Area Container */}
+      <div className="absolute top-4 left-4 right-4 md:right-auto z-40 pointer-events-none flex flex-col gap-3 items-start">
+        {/* Top Left Driver & Bus Info */}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 p-4 w-full max-w-xs transition-all pointer-events-auto">
           <div className="mb-2">
             <h2 className="font-bold text-[#4a2e15]">{selectedBusData.label}</h2>
             <p className="text-xs font-semibold text-[#8b5a2b]">{selectedBusData.name}</p>
@@ -157,6 +152,17 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
             )}
           </div>
         </div>
+
+        {/* Error Info Card stacked below Driver info */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 p-4 rounded-2xl shadow-lg flex items-start gap-3 pointer-events-auto w-full max-w-xs md:max-w-md">
+            <MapPin className="text-red-500 shrink-0 mt-1" size={20} />
+            <div>
+              <h4 className="font-bold text-red-700">No Active Data</h4>
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Route Sidebar Overlay */}

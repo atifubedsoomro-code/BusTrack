@@ -5,15 +5,13 @@ import { signInAnonymously } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { UserRole, BusId } from '../types';
+import { busData } from '../data/buses';
 
 interface LoginProps {
   onLogin: (role: UserRole, busId: BusId, rollNumber?: string) => void;
 }
 
-const BUSES: { id: BusId, label: string }[] = Array.from({ length: 7 }, (_, i) => ({
-  id: `bus_${i + 1}` as BusId,
-  label: `Point ${i + 1}`,
-}));
+const BUSES = Object.values(busData);
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [activeTab, setActiveTab] = useState<UserRole>('student');
@@ -124,19 +122,22 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">Select Point (Bus)</label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {BUSES.map((bus) => (
                   <button
                     key={bus.id}
                     type="button"
                     onClick={() => setSelectedBus(bus.id)}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all border ${
-                      selectedBus === bus.id 
-                        ? 'bg-[#8b5a2b] text-white border-[#8b5a2b] shadow-md' 
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#8b5a2b]/50 hover:bg-[#8b5a2b]/5'
+                    className={`p-3 rounded-xl text-left transition-all border outline-none ${
+                        selectedBus === bus.id 
+                        ? 'bg-[#8b5a2b] text-white border-[#8b5a2b] shadow-md ring-2 ring-[#8b5a2b]/20 offset-2' 
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-[#8b5a2b]/50 hover:bg-[#8b5a2b]/5'
                     }`}
                   >
-                    {bus.label}
+                    <p className="font-bold text-sm mb-0.5">{bus.label.split(' (')[0]}</p>
+                    <p className={`text-[10px] font-semibold truncate ${selectedBus === bus.id ? 'text-white/80' : 'text-gray-400'}`}>
+                        {bus.routeTitle}
+                    </p>
                   </button>
                 ))}
               </div>

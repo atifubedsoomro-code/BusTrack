@@ -4,8 +4,10 @@ import { Play, Square, MapPin, Radio, AlertCircle } from 'lucide-react';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { BusLocation, BusId } from '../types';
+import { busData } from '../data/buses';
 
 export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
+  const selectedBusData = busData[busId];
   const [isTracking, setIsTracking] = useState(false);
   const [currentCoords, setCurrentCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [status, setStatus] = useState<'idle' | 'tracking' | 'error'>('idle');
@@ -50,8 +52,8 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
       const { latitude, longitude } = position.coords;
       setCurrentCoords({ lat: latitude, lng: longitude });
 
-      // Keep last 100 coordinates
-      pathRef.current = [...pathRef.current, { lat: latitude, lng: longitude }].slice(-100);
+      // Keep last 5000 coordinates (long journey)
+      pathRef.current = [...pathRef.current, { lat: latitude, lng: longitude }].slice(-5000);
 
       const locationData: BusLocation = {
         lat: latitude,
@@ -110,7 +112,7 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
       const [lat, lng] = route[index];
       setCurrentCoords({ lat, lng });
       
-      pathRef.current = [...pathRef.current, { lat, lng }].slice(-100);
+      pathRef.current = [...pathRef.current, { lat, lng }].slice(-5000);
       
       const locationData: BusLocation = {
         lat,
@@ -185,7 +187,8 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
         </div>
         
         <h2 className="text-2xl font-bold text-[#4a2e15]">Host Dashboard</h2>
-        <p className="text-gray-500 mt-2 text-sm font-medium">Broadcasting on: <span className="text-[#8b5a2b] font-bold">{busId.replace('_', ' ').toUpperCase()}</span></p>
+        <p className="text-gray-500 mt-2 text-sm font-medium mb-1">Broadcasting: <span className="text-[#8b5a2b] font-bold">{selectedBusData.label}</span></p>
+        <p className="text-gray-400 text-xs font-semibold">{selectedBusData.name} • Driver: {selectedBusData.driverName}</p>
 
         <div className="mt-8 space-y-4">
           {!isTracking ? (

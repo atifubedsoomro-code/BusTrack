@@ -4,7 +4,8 @@ import { divIcon } from 'leaflet';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { BusLocation, BusId } from '../types';
-import { Bus, MapPin, Navigation, LocateFixed } from 'lucide-react';
+import { Bus, MapPin, Navigation, LocateFixed, Route, X, User } from 'lucide-react';
+import { busData } from '../data/buses';
 import 'leaflet/dist/leaflet.css';
 
 // Haversine formula to calculate distance in meters
@@ -48,6 +49,9 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [etaInfo, setEtaInfo] = useState<string | null>(null);
+
+  const [isRouteOpen, setIsRouteOpen] = useState(false);
+  const selectedBusData = busData[busId];
 
   const requestUserLocation = () => {
     if (!navigator.geolocation) {
@@ -110,7 +114,7 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-md">
           <Navigation className="animate-bounce text-[#8b5a2b] mb-2" size={48} />
           <p className="text-[#5e3a21] font-bold">Connecting to live feed...</p>
-          <p className="text-[#a67c52] text-sm mt-1">{busId.replace('_', ' ').toUpperCase()}</p>
+          <p className="text-[#a67c52] text-sm mt-1">{selectedBusData.label}</p>
         </div>
       ) : error ? (
         <div className="absolute inset-x-4 top-4 z-40 bg-red-50 border border-red-200 p-4 rounded-2xl shadow-lg flex items-start gap-3">
@@ -121,6 +125,75 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
           </div>
         </div>
       ) : null}
+
+      {/* Route Button - Bottom Left */}
+      <div className="absolute bottom-40 md:bottom-8 left-4 z-40">
+        <button 
+          onClick={() => setIsRouteOpen(true)}
+          className="bg-white/95 backdrop-blur-md shadow-lg border border-[#8b5a2b]/20 p-3 rounded-2xl flex flex-col items-center justify-center text-[#8b5a2b] hover:bg-[#8b5a2b]/10 transition-colors"
+          title="View Route Schedule"
+        >
+          <Route size={24} />
+          <span className="text-[10px] font-bold mt-1 uppercase">Route</span>
+        </button>
+      </div>
+
+      {/* Top Left Driver & Bus Info */}
+      <div className="absolute top-4 left-4 z-40 pointer-events-none">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 p-4 max-w-xs transition-all pointer-events-auto">
+          <div className="mb-2">
+            <h2 className="font-bold text-[#4a2e15]">{selectedBusData.label}</h2>
+            <p className="text-xs font-semibold text-[#8b5a2b]">{selectedBusData.name}</p>
+          </div>
+          <div className="text-xs text-gray-600 border-t border-gray-100 pt-2 mt-1">
+            <div className="flex items-center gap-1.5 mb-1">
+              <User size={14} className="text-gray-400" />
+              <span className="font-medium">{selectedBusData.driverName}</span>
+            </div>
+            {selectedBusData.phone && (
+              <div className="flex items-center gap-1.5 text-[#5e3a21]">
+                <span className="font-semibold text-[10px] uppercase tracking-wider bg-[#8b5a2b]/10 px-1.5 py-0.5 rounded">Call: {selectedBusData.phone}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Route Sidebar Overlay */}
+      {isRouteOpen && (
+        <div className="absolute inset-y-0 right-0 w-80 bg-white/95 backdrop-blur-xl shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-50 flex flex-col border-l border-[#8b5a2b]/20 transition-transform transform translate-x-0">
+          <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-[#fdfbf7]">
+            <h3 className="font-bold text-[#5e3a21] flex items-center gap-2">
+              <Route size={18} className="text-[#8b5a2b]" /> Route Schedule
+            </h3>
+            <button 
+              onClick={() => setIsRouteOpen(false)}
+              className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="p-4 bg-[#8b5a2b]/5">
+            <p className="text-xs font-bold text-[#8b5a2b] uppercase tracking-wider">{selectedBusData.routeTitle}</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            <ul className="space-y-1 relative">
+              <div className="absolute left-6 top-3 bottom-3 w-px bg-gray-200" />
+              {selectedBusData.stops.map((stop, idx) => (
+                <li key={idx} className="relative flex items-center p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                  <div className="w-6 flex justify-end mr-4 relative z-10">
+                    <div className="w-3 h-3 rounded-full bg-white border-2 border-[#8b5a2b] shadow-sm" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-800 text-sm">{stop.stop}</p>
+                    <p className="text-xs text-gray-500 font-mono mt-0.5 font-medium">{stop.time}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <div className="absolute inset-0 z-10 w-full h-full">
         <MapContainer 
@@ -142,8 +215,8 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
               >
                 <Popup>
                   <div className="text-center p-1">
-                    <h3 className="font-bold text-[#5e3a21]">{busId.replace('_', ' ').toUpperCase()}</h3>
-                    <p className="text-xs text-[#a67c52]">Live Location</p>
+                    <h3 className="font-bold text-[#5e3a21]">{selectedBusData.label}</h3>
+                    <p className="text-xs text-[#a67c52]">Live Location • {selectedBusData.driverName}</p>
                     <p className="text-[10px] text-gray-500 mt-1 font-mono">
                       Last update: {new Date(location.updatedAt).toLocaleTimeString()}
                     </p>
@@ -154,7 +227,7 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
               {location.path && location.path.length > 1 && (
                 <Polyline 
                   positions={location.path.map(p => [p.lat, p.lng])} 
-                  pathOptions={{ color: '#8b5a2b', weight: 4, dashArray: '8, 8', opacity: 0.8 }} 
+                  pathOptions={{ color: '#8b5a2b', weight: 6, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} 
                 />
               )}
 
@@ -193,10 +266,10 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
               <Bus size={24} />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-[#5e3a21] leading-tight">{busId.replace('_', ' ').toUpperCase()} is LIVE</h3>
+              <h3 className="font-bold text-[#5e3a21] leading-tight">{selectedBusData.label} is LIVE</h3>
               <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5 font-medium">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                Active Journey
+                {selectedBusData.name}
               </p>
             </div>
             <div className="text-right pr-2">

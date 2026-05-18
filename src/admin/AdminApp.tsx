@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Shield, ShieldAlert, MonitorPlay, Car, Search, Menu, X, ArrowLeft, Settings2, BellElectric, UserCircle, Save, CheckCircle2, AlertTriangle, AlertCircle, Activity, MapPin } from 'lucide-react';
 import { busData, BusId, BusData } from '../data/buses';
 import { motion, AnimatePresence } from 'motion/react';
+import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { BusLocation } from '../types';
+import { AdminMap } from './AdminMap';
 
 // --- AUTHENTICATION COMPONENT ---
 const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
@@ -84,50 +88,41 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
 };
 
 // --- DASHBOARD COMPONENT ---
-type BusStatus = 'active' | 'idle' | 'delayed' | 'maintenance' | 'offline';
-
-interface FleetState extends BusData {
-  status: BusStatus;
-  lastPing: string;
-}
-
-const initialFleetState: Record<BusId, FleetState> = Object.keys(busData).reduce((acc, key) => {
-  acc[key as BusId] = {
-    ...busData[key as BusId],
-    status: 'offline', // Default realistic start state
-    lastPing: new Date(Date.now() - Math.random() * 100000).toISOString()
-  };
-  return acc;
-}, {} as Record<BusId, FleetState>);
 
 const AdminDashboard = () => {
-  const [fleet, setFleet] = useState<Record<BusId, FleetState>>(initialFleetState);
+  const [locations, setLocations] = useState<Record<string, BusLocation>>({});
+  const [fleet, setFleet] = useState<Record<BusId, BusData>>(busData);
   const [emergencyMessage, setEmergencyMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'monitoring' | 'logs'>('monitoring');
   const [editingBus, setEditingBus] = useState<BusId | null>(null);
 
-  // Stats
-  const activeCount = Object.values(fleet).filter(b => b.status === 'active').length;
-  const delayedCount = Object.values(fleet).filter(b => b.status === 'delayed').length;
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'busLocations'), (snapshot) => {
+      const locs: Record<string, BusLocation> = {};
+      snapshot.forEach(doc => {
+        locs[doc.id] = doc.data() as BusLocation;
+      });
+      setLocations(locs);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // Placeholder for Firebase Realtime/Firestore updates
-  const updateFirebaseBusStatus = async (id: BusId, status: BusStatus) => {
-    // Example: await setDoc(doc(db, "fleet_status", id), { status, updatedAt: serverTimestamp() }, { merge: true });
-    console.log(`[FIREBASE PUT] Updating ${id} status to ${status}`);
-    setFleet(prev => ({
-      ...prev,
-      [id]: { ...prev[id], status }
-    }));
-  };
+  // Stats
+  const now = Date.now();
+  const activeBuses = Object.keys(locations).filter(id => {
+    const timeDiff = now - new Date(locations[id].updatedAt).getTime();
+    return timeDiff < 5 * 60 * 1000; // active if updated within 5 minutes
+  });
+  
+  const activeCount = activeBuses.length;
+  const delayedCount = 0; // We're removing the manual delayed status 
 
   const updateFirebaseEmergency = async (msg: string) => {
-    // Example: await setDoc(doc(db, "system_alerts", "global"), { message: msg, active: true, timestamp: serverTimestamp() });
+    // Keeping this as placeholder but showing functional alert to user
     console.log(`[FIREBASE PUT] Updating emergency broadcast: ${msg}`);
-    if (msg) alert('Emergency Broadcast deployed successfully.');
+    if (msg) alert('Emergency Broadcast recorded (Mock).');
   };
 
   const saveDriverAndVehicle = async (id: BusId, driver: string, vehicle: string) => {
-    // Example: await updateDoc(doc(db, "buses", id), { driverName: driver, name: vehicle });
     console.log(`[FIREBASE PUT] Updating ${id} config`, { driver, vehicle });
     setFleet(prev => ({
       ...prev,
@@ -240,16 +235,28 @@ const AdminDashboard = () => {
 
         {/* Right Area - Grid */}
         <div className="flex-1 flex flex-col bg-[#0f1115] relative overflow-y-auto">
+          
+          <div className="p-6 pb-2">
+            <h2 className="text-xl font-medium tracking-tight text-white flex items-center gap-2 mb-4">
+              Live Fleet View
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />
+            </h2>
+            <div className="w-full h-[450px]">
+              <AdminMap />
+            </div>
+          </div>
+
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-medium tracking-tight text-white flex items-center gap-2">
-                Live Monitoring Grid
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />
+              <h2 className="text-lg font-medium tracking-tight text-gray-300 flex items-center gap-2">
+                Bus Properties
               </h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 pb-20">
-              {Object.values(fleet).map(bus => (
+              {Object.values(fleet).map(bus => {
+                const isBusActive = activeBuses.includes(bus.id);
+                return (
                 <div key={bus.id} className="bg-[#161921] border border-gray-800 hover:border-gray-700 rounded-2xl flex flex-col overflow-hidden transition-colors shadow-lg">
                   {/* Card Header */}
                   <div className="p-4 border-b border-gray-800 flex justify-between items-start bg-[#1b1f28]/50">
@@ -258,29 +265,11 @@ const AdminDashboard = () => {
                       <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5 truncate max-w-[180px]">{bus.routeTitle}</p>
                     </div>
                     
-                    {/* Status Dropdown */}
-                    <div className="relative">
-                      <select 
-                        value={bus.status}
-                        onChange={(e) => updateFirebaseStatusState(bus.id, e.target.value as BusStatus)}
-                        className={`text-xs appearance-none font-bold px-3 py-1.5 rounded-full border outline-none cursor-pointer pr-8
-                          ${bus.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : ''}
-                          ${bus.status === 'delayed' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : ''}
-                          ${bus.status === 'offline' ? 'bg-gray-800 text-gray-400 border-gray-700' : ''}
-                          ${bus.status === 'idle' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : ''}
-                          ${bus.status === 'maintenance' ? 'bg-red-500/10 text-red-500 border-red-500/20' : ''}
-                        `}
-                      >
-                        <option value="active" className="bg-gray-900 text-white">Active</option>
-                        <option value="delayed" className="bg-gray-900 text-white">Delayed</option>
-                        <option value="idle" className="bg-gray-900 text-white">Idle</option>
-                        <option value="maintenance" className="bg-gray-900 text-white">Maintenance</option>
-                        <option value="offline" className="bg-gray-900 text-white">Offline</option>
-                      </select>
-                      {/* Custom dropdown arrow */}
-                      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                        <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                      </div>
+                    {/* Status Badge */}
+                    <div className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-sm border ${
+                      isBusActive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-gray-800/50 text-gray-400 border-gray-700'
+                    }`}>
+                      {isBusActive ? 'Active' : 'Offline'}
                     </div>
                   </div>
 
@@ -340,19 +329,15 @@ const AdminDashboard = () => {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
       </main>
     </div>
   );
-
-  function updateFirebaseStatusState(id: BusId, status: BusStatus) {
-    updateFirebaseBusStatus(id, status);
-  }
 };
-
 
 // Setup a sub-component for inline editing
 const AdminBusEditor = ({ bus, onSave, onCancel }: { bus: BusData, onSave: (driver: string, vehicle: string) => void, onCancel: () => void }) => {

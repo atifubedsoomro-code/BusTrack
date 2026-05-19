@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, ShieldAlert, MonitorPlay, Car, Search, Menu, X, ArrowLeft, Settings2, BellElectric, UserCircle, Save, CheckCircle2, AlertTriangle, AlertCircle, Activity, MapPin } from 'lucide-react';
 import { busData, BusId, BusData } from '../data/buses';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { signInAnonymously } from 'firebase/auth';
 import { BusLocation } from '../types';
@@ -18,7 +18,12 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
     e.preventDefault();
     if (username === 'samiullahpathan' && password === 'samiullah-campuslink') {
       try {
-        await signInAnonymously(auth);
+        const cred = await signInAnonymously(auth);
+        const userDocRef = doc(db, 'users', cred.user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (!userDoc.exists()) {
+          await setDoc(userDocRef, { role: 'admin' });
+        }
         onLogin();
       } catch (err) {
         setError('Failed to securely connect to database.');

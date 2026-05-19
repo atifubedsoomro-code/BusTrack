@@ -47,8 +47,8 @@ export const AdminMap = ({ mapTheme }: { mapTheme: 'light' | 'dark' }) => {
         <TileLayer
           url={mapTheme === 'dark' 
             ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"}
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
         {Object.entries(locations).map(([id, loc]) => {
           const bus = busData[id as BusId];
@@ -73,9 +73,9 @@ export const AdminMap = ({ mapTheme }: { mapTheme: 'light' | 'dark' }) => {
                 <Polyline 
                   positions={loc.path.map(p => [p.lat, p.lng])} 
                   color={routeColor} 
-                  weight={4} 
-                  opacity={0.8}
-                  dashArray="10, 10"
+                  weight={5} 
+                  opacity={0.9}
+                  dashArray="5, 10"
                 />
               )}
               <Marker position={[loc.lat, loc.lng]} icon={busIconColor}>

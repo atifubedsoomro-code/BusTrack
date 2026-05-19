@@ -39,6 +39,18 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // System Alerts
+    match /system_alerts/{alertId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Bus Configuration
+    match /busConfig/{busId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // User Profiles
     match /users/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;

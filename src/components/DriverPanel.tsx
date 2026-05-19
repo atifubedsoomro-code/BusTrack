@@ -196,8 +196,8 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
         </div>
         
         <h2 className="text-2xl font-bold text-[#4a2e15] dark:text-gray-100">Host Dashboard</h2>
-        <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium mb-1">Broadcasting: <span className="text-[#8b5a2b] dark:text-[#d3b497] font-bold">{selectedBusData.label}</span></p>
-        <p className="text-gray-400 dark:text-gray-500 text-xs font-semibold">{selectedBusData.name} • Driver: {selectedBusData.driverName}</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium mb-1">Broadcasting: <span className="text-[#8b5a2b] dark:text-[#d3b497] font-bold">{selectedBusData?.label}</span></p>
+        <p className="text-gray-400 dark:text-gray-500 text-xs font-semibold">{selectedBusData?.name} • Driver: {selectedBusData?.driverName}</p>
 
         <div className="mt-8 space-y-4">
           {!isTracking ? (

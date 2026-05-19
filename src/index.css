@@ -26,6 +26,7 @@
 
 /* Invert map tiles for a beautiful dark theme */
 .dark .leaflet-layer,
+.map-tiles-dark,
 .dark .leaflet-control-zoom-in,
 .dark .leaflet-control-zoom-out,
 .dark .leaflet-control-attribution {

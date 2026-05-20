@@ -10,11 +10,17 @@ export const DriverPanel: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [selectedBusData, setSelectedBusData] = useState(busData[busId]);
   
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'busConfig', busId), (docSnap) => {
-       if (docSnap.exists()) {
-           setSelectedBusData({ ...busData[busId], ...docSnap.data() } as any);
-       }
-    });
+    const unsub = onSnapshot(
+      doc(db, 'busConfig', busId), 
+      (docSnap) => {
+         if (docSnap.exists()) {
+             setSelectedBusData({ ...busData[busId], ...docSnap.data() } as any);
+         }
+      },
+      (err) => {
+         console.warn("Failed to subscribe to busConfig:", err);
+      }
+    );
     return unsub;
   }, [busId]);
   const [isTracking, setIsTracking] = useState(false);

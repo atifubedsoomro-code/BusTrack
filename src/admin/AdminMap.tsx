@@ -26,6 +26,8 @@ export const AdminMap = ({ mapTheme }: { mapTheme: 'light' | 'dark' }) => {
         locs[doc.id] = doc.data() as BusLocation;
       });
       setLocations(locs);
+    }, (err) => {
+      console.warn("Failed to subscribe to busLocations:", err);
     });
 
     return () => unsubscribe();

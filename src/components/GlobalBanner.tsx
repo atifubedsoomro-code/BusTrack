@@ -8,13 +8,19 @@ export const GlobalBanner = () => {
   const [alertData, setAlertData] = useState<{ message: string; active: boolean; expiresAt?: number } | null>(null);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'system_alerts', 'global'), (doc) => {
-      if (doc.exists()) {
-        setAlertData(doc.data() as any);
-      } else {
-        setAlertData(null);
+    const unsub = onSnapshot(
+      doc(db, 'system_alerts', 'global'), 
+      (doc) => {
+        if (doc.exists()) {
+          setAlertData(doc.data() as any);
+        } else {
+          setAlertData(null);
+        }
+      },
+      (err) => {
+        console.warn("Failed to subscribe to global alerts:", err);
       }
-    });
+    );
     return unsub;
   }, []);
 

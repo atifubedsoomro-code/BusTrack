@@ -54,11 +54,17 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [selectedBusData, setSelectedBusData] = useState(busData[busId]);
   
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'busConfig', busId), (docSnap) => {
-       if (docSnap.exists()) {
-           setSelectedBusData({ ...busData[busId], ...docSnap.data() } as any);
-       }
-    });
+    const unsub = onSnapshot(
+      doc(db, 'busConfig', busId), 
+      (docSnap) => {
+         if (docSnap.exists()) {
+             setSelectedBusData({ ...busData[busId], ...docSnap.data() } as any);
+         }
+      },
+      (err) => {
+         console.warn("Failed to subscribe to busConfig:", err);
+      }
+    );
     return unsub;
   }, [busId]);
 
@@ -125,7 +131,7 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-md">
           <Navigation className="animate-bounce text-[#8b5a2b] dark:text-[#c49a6f] mb-2" size={48} />
           <p className="text-[#5e3a21] dark:text-gray-100 font-bold">Connecting to live feed...</p>
-          <p className="text-[#a67c52] dark:text-gray-400 text-sm mt-1">{selectedBusData.label}</p>
+          <p className="text-[#a67c52] dark:text-gray-400 text-sm mt-1">{selectedBusData?.label}</p>
         </div>
       ) : null}
 
@@ -147,8 +153,8 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
         <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 dark:border-gray-700 p-4 w-full max-w-xs transition-all pointer-events-auto flex flex-col">
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h2 className="font-bold text-[#4a2e15] dark:text-gray-100">{selectedBusData.label}</h2>
-              <p className="text-xs font-semibold text-[#8b5a2b] dark:text-[#c49a6f]">{selectedBusData.name}</p>
+              <h2 className="font-bold text-[#4a2e15] dark:text-gray-100">{selectedBusData?.label}</h2>
+              <p className="text-xs font-semibold text-[#8b5a2b] dark:text-[#c49a6f]">{selectedBusData?.name}</p>
             </div>
             {location ? (
               <div className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border ${
@@ -167,9 +173,9 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
           <div className="text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2 mt-1">
             <div className="flex items-center gap-1.5 mb-1">
               <User size={14} className="text-gray-400 dark:text-gray-500" />
-              <span className="font-medium">{selectedBusData.driverName}</span>
+              <span className="font-medium">{selectedBusData?.driverName}</span>
             </div>
-            {selectedBusData.phone && (
+            {selectedBusData?.phone && (
               <div className="flex items-center gap-1.5 text-[#5e3a21] dark:text-gray-300">
                 <span className="font-semibold text-[10px] uppercase tracking-wider bg-[#8b5a2b]/10 dark:bg-gray-700 px-1.5 py-0.5 rounded">Call: {selectedBusData.phone}</span>
               </div>
@@ -204,12 +210,12 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
             </button>
           </div>
           <div className="p-4 bg-[#8b5a2b]/5 dark:bg-gray-900">
-            <p className="text-xs font-bold text-[#8b5a2b] dark:text-[#c49a6f] uppercase tracking-wider">{selectedBusData.routeTitle}</p>
+            <p className="text-xs font-bold text-[#8b5a2b] dark:text-[#c49a6f] uppercase tracking-wider">{selectedBusData?.routeTitle}</p>
           </div>
           <div className="flex-1 overflow-y-auto p-2">
             <ul className="space-y-1 relative">
               <div className="absolute left-6 top-3 bottom-3 w-px bg-gray-200 dark:bg-gray-700" />
-              {selectedBusData.stops.map((stop, idx) => (
+              {selectedBusData?.stops?.map((stop, idx) => (
                 <li key={idx} className="relative flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
                   <div className="w-6 flex justify-end mr-4 relative z-10">
                     <div className="w-3 h-3 rounded-full bg-white dark:bg-gray-800 border-2 border-[#8b5a2b] dark:border-[#c49a6f] shadow-sm" />
@@ -245,8 +251,8 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
               >
                 <Popup>
                   <div className="text-center p-1">
-                    <h3 className="font-bold text-[#5e3a21] dark:text-gray-100">{selectedBusData.label}</h3>
-                    <p className="text-xs text-[#a67c52] dark:text-[#c49a6f]">Live Location • {selectedBusData.driverName}</p>
+                    <h3 className="font-bold text-[#5e3a21] dark:text-gray-100">{selectedBusData?.label}</h3>
+                    <p className="text-xs text-[#a67c52] dark:text-[#c49a6f]">Live Location • {selectedBusData?.driverName}</p>
                     <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 font-mono">
                       Last update: {new Date(location.updatedAt).toLocaleTimeString()}
                     </p>
@@ -296,10 +302,10 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
               <Bus size={24} />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-[#5e3a21] dark:text-gray-100 leading-tight">{selectedBusData.label} is LIVE</h3>
+              <h3 className="font-bold text-[#5e3a21] dark:text-gray-100 leading-tight">{selectedBusData?.label} is LIVE</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5 font-medium">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                {selectedBusData.name}
+                {selectedBusData?.name}
               </p>
             </div>
             <div className="text-right pr-2">

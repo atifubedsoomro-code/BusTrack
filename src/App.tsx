@@ -137,7 +137,11 @@ export default function App() {
 
               {/* Content */}
               <main className="flex-1 relative overflow-hidden flex flex-col">
-                {role === 'admin' ? <DriverPanel busId={busId} /> : <BusMap busId={busId} />}
+                {role === 'admin' ? (
+                  <DriverPanel busId={busId} />
+                ) : (
+                  <BusMap busId={busId} onSwitchBus={(newBusId) => setBusId(newBusId)} />
+                )}
               </main>
             </motion.div>
           )}

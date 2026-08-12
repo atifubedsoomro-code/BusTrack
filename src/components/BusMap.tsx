@@ -43,7 +43,7 @@ const RecenterMap: React.FC<{ lat: number, lng: number }> = ({ lat, lng }) => {
   return null;
 };
 
-export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
+export const BusMap: React.FC<{ busId: BusId, onSwitchBus?: (busId: BusId) => void }> = ({ busId, onSwitchBus }) => {
   const [location, setLocation] = useState<BusLocation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +54,8 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
   const [selectedBusData, setSelectedBusData] = useState(busData[busId]);
   
   useEffect(() => {
+    // Also update selectedBusData when busId prop changes
+    setSelectedBusData(busData[busId]);
     const unsub = onSnapshot(
       doc(db, 'busConfig', busId), 
       (docSnap) => {
@@ -153,7 +155,24 @@ export const BusMap: React.FC<{ busId: BusId }> = ({ busId }) => {
         <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#8b5a2b]/20 dark:border-gray-700 p-4 w-full max-w-xs transition-all pointer-events-auto flex flex-col">
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h2 className="font-bold text-[#4a2e15] dark:text-gray-100">{selectedBusData?.label}</h2>
+              {onSwitchBus ? (
+                <div className="relative">
+                  <select 
+                    className="font-bold text-[#4a2e15] dark:text-gray-100 bg-gray-50/50 dark:bg-gray-800 border border-[#8b5a2b]/20 dark:border-gray-700 rounded-lg p-1.5 mb-1 outline-none focus:ring-2 focus:ring-[#8b5a2b] appearance-none pr-8 cursor-pointer w-full text-sm"
+                    value={busId}
+                    onChange={(e) => onSwitchBus(e.target.value as BusId)}
+                  >
+                    {Object.values(busData).map(b => (
+                      <option key={b.id} value={b.id} className="text-gray-900 bg-white">{b.label}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#8b5a2b]">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+              ) : (
+                <h2 className="font-bold text-[#4a2e15] dark:text-gray-100">{selectedBusData?.label}</h2>
+              )}
               <p className="text-xs font-semibold text-[#8b5a2b] dark:text-[#c49a6f]">{selectedBusData?.name}</p>
             </div>
             {location ? (

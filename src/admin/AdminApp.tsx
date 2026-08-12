@@ -246,17 +246,17 @@ const AdminDashboard = () => {
               />
               <div className="flex gap-2">
                 <button 
-                  onClick={() => updateFirebaseEmergency(emergencyMessage, 1)}
+                  onClick={() => updateFirebaseEmergency(emergencyMessage, 3)}
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <AlertTriangle size={14} /> 1Hr Alert
+                  <AlertTriangle size={14} /> 3Hr Alert
                 </button>
                 <button 
                   onClick={() => updateFirebaseEmergency('', 0)}
                   className="px-3 bg-[#1b1f28] border border-red-500/20 hover:bg-red-500/10 text-red-400 text-[11px] font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5"
                   title="Turn off alert"
                 >
-                  <X size={14} /> Clear
+                  <X size={14} /> Remove
                 </button>
               </div>
            </div>

@@ -100,6 +100,54 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeveloper, setShowDeveloper] = useState(false);
+  const [rollNumber, setRollNumber] = useState('');
+
+  const rollNumberRegex = /^\d{2}-[A-Z]{2,3}-\d{2,3}$/;
+
+  const handleRollNumberLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (!rollNumberRegex.test(rollNumber.toUpperCase())) {
+        throw new Error('Invalid Roll Number format. Use e.g. 25-CS-18');
+      }
+
+      const userCredential = await signInAnonymously(auth);
+      const user = userCredential.user;
+      const userRef = doc(db, 'users', user.uid);
+      
+      let userSnap;
+      try {
+        userSnap = await getDoc(userRef);
+      } catch (err) {
+        console.warn('Could not fetch user document:', err);
+      }
+
+      if (!userSnap || !userSnap.exists()) {
+        try {
+          await setDoc(userRef, {
+            role: 'student',
+            rollNumber: rollNumber.toUpperCase(),
+            createdAt: new Date().toISOString()
+          });
+        } catch (err) {
+          console.warn('Could not create user document:', err);
+        }
+      }
+
+      onLogin('student', selectedBus, rollNumber.toUpperCase());
+    } catch (err) {
+      let errorMessage = 'An error occurred';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setError(null);
@@ -399,6 +447,37 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <p className="text-center text-[10px] text-gray-400 dark:text-[#c49a6f] mt-3 font-semibold">
                       Requires @bbsutsd.edu.pk email
                     </p>
+
+                    <div className="relative flex items-center my-6">
+                      <div className="flex-grow border-t border-gray-200 dark:border-[#5c3a21]"></div>
+                      <span className="flex-shrink-0 mx-4 text-gray-400 dark:text-[#c49a6f] text-xs font-bold tracking-widest uppercase">
+                        Or enter Roll Number
+                      </span>
+                      <div className="flex-grow border-t border-gray-200 dark:border-[#5c3a21]"></div>
+                    </div>
+
+                    <form onSubmit={handleRollNumberLogin} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 dark:text-[#c49a6f] uppercase tracking-widest mb-1.5">Roll Number</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 25-CS-18"
+                          value={rollNumber}
+                          onChange={(e) => setRollNumber(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#1a100b] border border-gray-200 dark:border-[#5c3a21] focus:ring-2 focus:ring-[#8b5a2b]/30 focus:border-[#8b5a2b] dark:focus:border-[#a67c52] text-gray-900 dark:text-[#fdfbf7] placeholder-gray-400 dark:placeholder-[#8b5a2b] outline-none transition-all shadow-sm"
+                          required
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3.5 rounded-xl flex items-center justify-center gap-2 font-bold text-[#4a2e15] dark:text-[#fdfbf7] bg-[#e2d5c8] hover:bg-[#d3b497] dark:bg-[#5c3a21] dark:hover:bg-[#8b5a2b] transition-all shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                      >
+                        {loading ? <Loader2 className="animate-spin" /> : (
+                          <>Login with Roll Number <ArrowRight size={18} /></>
+                        )}
+                      </button>
+                    </form>
                   </motion.div>
                 ) : (
                   <motion.div
